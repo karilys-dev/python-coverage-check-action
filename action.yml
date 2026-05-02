@@ -1,0 +1,43 @@
+name: "Python Coverage Check"
+description: "Publish coverage CLI table to PR checks"
+
+inputs:
+  working-directory:
+    required: false
+    default: "."
+
+runs:
+  using: "composite"
+  steps:
+    - name: Generate coverage report
+      id: coverage
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        REPORT=$(coverage report)
+        echo "$REPORT"
+
+        # Save as multiline output for next step
+        echo "report<<EOF" >> $GITHUB_OUTPUT
+        echo "$REPORT" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Publish to PR check
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const report = `${{ steps.coverage.outputs.report }}`;
+
+          await github.rest.checks.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            name: "Python coverage",
+            head_sha: context.sha,
+            status: "completed",
+            conclusion: "neutral",
+            output: {
+              title: "Python coverage",
+              summary: "Coverage report",
+              text: "```\n" + report + "\n```"
+            }
+          });
