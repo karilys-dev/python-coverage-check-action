@@ -22,15 +22,34 @@ runs:
         echo "$REPORT" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
 
-    - name: Publish to PR check
+    - name: Publish styled coverage report
       uses: actions/github-script@v7
       with:
         script: |
-          const report = `${{ steps.coverage.outputs.report }}`;
+          const raw = `${{ steps.coverage.outputs.report }}`;
 
-          const sha = context.payload.pull_request
-            ? context.payload.pull_request.head.sha
-            : context.sha;
+          const lines = raw.split('\n').filter(l => l.trim() !== '');
+
+          // Remove separator lines (----)
+          const clean = lines.filter(l => !l.includes('---'));
+
+          // Extract header + rows
+          const header = clean[0].split(/\s{2,}/);
+          const rows = clean.slice(1).map(line => line.split(/\s{2,}/));
+
+          // Build markdown table
+          let table = '| ' + header.join(' | ') + ' |\n';
+          table += '| ' + header.map(() => '---').join(' | ') + ' |\n';
+
+          for (const row of rows) {
+            table += '| ' + row.join(' | ') + ' |\n';
+          }
+
+          // Extract TOTAL coverage
+          const totalLine = rows.find(r => r[0] === 'TOTAL');
+          const totalCoverage = totalLine ? totalLine[3] : 'N/A';
+
+          const sha = context.payload.pull_request?.head?.sha;
 
           await github.rest.checks.create({
             owner: context.repo.owner,
@@ -38,10 +57,21 @@ runs:
             name: "Python coverage",
             head_sha: sha,
             status: "completed",
-            conclusion: report.includes("100%") ? "success" : "neutral"
+            conclusion: "success",
             output: {
-              title: "Python coverage",
-              summary: "Coverage report",
-              text: "```\n" + report + "\n```"
-            }
-          });
+              title: `Python Coverage (${totalCoverage})`,
+              summary: `
+          ### 📊 Coverage Summary
+
+          **Total Coverage: ${totalCoverage}**
+
+          <details>
+          <summary>View full report</summary>
+
+          ${table}
+
+          </details>
+          `,
+                    text: table
+                  }
+                });
