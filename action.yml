@@ -28,13 +28,17 @@ runs:
         script: |
           const report = `${{ steps.coverage.outputs.report }}`;
 
+          const sha = context.payload.pull_request
+            ? context.payload.pull_request.head.sha
+            : context.sha;
+
           await github.rest.checks.create({
             owner: context.repo.owner,
             repo: context.repo.repo,
             name: "Python coverage",
-            head_sha: context.sha,
+            head_sha: sha,
             status: "completed",
-            conclusion: "neutral",
+            conclusion: report.includes("100%") ? "success" : "neutral"
             output: {
               title: "Python coverage",
               summary: "Coverage report",
