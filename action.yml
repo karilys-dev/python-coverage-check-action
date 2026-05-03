@@ -34,7 +34,7 @@ runs:
 
         # Get markdown coverage output
         REPORT_CONTENT=$(coverage report --format=markdown)
-        TEXT=$(jq -Rs . <<< "$MARKDOWN")
+        TEXT=$(jq -Rs . <<< "$REPORT_CONTENT")
         echo "==== RAW COVERAGE OUTPUT ===="
         echo "$REPORT_CONTENT"
         echo "============================="
