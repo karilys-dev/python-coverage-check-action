@@ -25,26 +25,7 @@ runs:
 
         cd "$REPORT_PATH"
 
-        REPORT_CONTENT=$(coverage report --format=text)
-
-        # Build table header
-        TABLE="| File | Stmts | Miss | Cover |\n"
-        TABLE+="|------|-------|------|-------|\n"
-
-        # Avoid subshell by using process substitution
-        while IFS= read -r line; do
-          FILE=$(echo "$line" | awk '{print $1}')
-          STMTS=$(echo "$line" | awk '{print $2}')
-          MISS=$(echo "$line" | awk '{print $3}')
-          COVER=$(echo "$line" | awk '{print $4}')
-
-          TABLE+="| $FILE | $STMTS | $MISS | $COVER |\n"
-        done < <(echo "$REPORT_CONTENT" | tail -n +3)
-
-        # Optional: wrap in markdown section
-        MARKDOWN=$(printf "### Coverage Report\n\n%s" "$TABLE")
-
-        # Convert to JSON-safe string
+        MARKDOWN=$(coverage report --format=markdown)
         TEXT=$(jq -Rs . <<< "$MARKDOWN")
 
         curl -X POST \
