@@ -1,5 +1,5 @@
 name: 'My Plugin'
-description: 'Creates a check run'
+description: 'Creates a coverage check run'
 
 inputs:
   working-directory:
@@ -8,6 +8,7 @@ inputs:
   coverage-threshold:
     required: false
     default: "80"
+
 runs:
   using: 'composite'
   steps:
@@ -19,6 +20,10 @@ runs:
         set -eEuo pipefail
 
         REPORT_PATH="${{ inputs.working-directory }}"
+        THRESHOLD="${{ inputs.coverage-threshold }}"
+
+        echo "Working directory: $REPORT_PATH"
+        echo "Threshold: $THRESHOLD"
 
         if [ ! -d "$REPORT_PATH" ]; then
           echo "Report directory not found: $REPORT_PATH"
@@ -27,14 +32,28 @@ runs:
 
         cd "$REPORT_PATH"
 
-        MARKDOWN=$(coverage report --format=markdown)
+        # Get markdown coverage output
+        REPORT_CONTENT=$(coverage report --format=markdown)
         TEXT=$(jq -Rs . <<< "$MARKDOWN")
+        echo "==== RAW COVERAGE OUTPUT ===="
+        echo "$REPORT_CONTENT"
+        echo "============================="
 
-        THRESHOLD=${{ inputs.coverage-threshold }}
-        TOTAL_COVER=$(echo "$REPORT_CONTENT" | awk '/TOTAL/ {print $4}' | tr -d '%')
-        echo "Total coverage: $TOTAL_COVER%"
-        echo "Threshold: $THRESHOLD%"
+        # Extract TOTAL coverage from markdown table
+        TOTAL_COVER=$(echo "$REPORT_CONTENT" \
+          | grep -E '\|\s*TOTAL\s*\|' \
+          | awk -F'|' '{gsub(/ /,"",$5); print $5}' \
+          | tr -d '%')
 
+        # Fail fast if parsing broke
+        if [ -z "$TOTAL_COVER" ]; then
+          echo "❌ Failed to parse total coverage"
+          exit 1
+        fi
+
+        echo "Parsed total coverage: $TOTAL_COVER%"
+
+        # Determine pass/fail
         if [ "$TOTAL_COVER" -lt "$THRESHOLD" ]; then
           CONCLUSION="failure"
           SUMMARY="❌ Coverage $TOTAL_COVER% is below threshold $THRESHOLD%"
@@ -43,7 +62,8 @@ runs:
           SUMMARY="✅ Coverage $TOTAL_COVER% meets threshold $THRESHOLD%"
         fi
 
-        curl -X POST \
+        # Create check run
+        curl -s -X POST \
           -H "Authorization: Bearer $GITHUB_TOKEN" \
           -H "Accept: application/vnd.github+json" \
           https://api.github.com/repos/${{ github.repository }}/check-runs \
@@ -60,4 +80,9 @@ runs:
           }
         }
         EOF
-        
+
+        # Also fail the job if coverage is below threshold
+        if [ "$CONCLUSION" = "failure" ]; then
+          echo "❌ Failing job due to low coverage"
+          exit 1
+        fi
