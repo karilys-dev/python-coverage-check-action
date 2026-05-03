@@ -1,6 +1,9 @@
 name: 'My Plugin'
 description: 'Creates a check run'
-
+inputs:
+  working-directory:
+    required: false
+    default: "."
 runs:
   using: 'composite'
   steps:
@@ -9,8 +12,20 @@ runs:
       env:
         GITHUB_TOKEN: ${{ github.token }}
       run: |
+        REPORT_PATH="${{ inputs.working-directory }}"
+
+        if [ ! -f "$REPORT_PATH" ]; then
+          echo "Report not found: $REPORT_PATH"
+          exit 1
+        fi
+        cd "${{ inputs.working-directory }}"
+        REPORT_CONTENT=$(coverage report)
+
+        MARKDOWN=$(printf "### Coverage Report\n\n\`\`\`\n%s\n\`\`\`" "$REPORT_CONTENT")
+
         echo "github.sha: ${{ github.sha }}"
         echo "pr.head.sha: ${{ github.event.pull_request.head.sha }}"
+        
         curl -X POST \
           -H "Authorization: Bearer $GITHUB_TOKEN" \
           -H "Accept: application/vnd.github+json" \
@@ -22,8 +37,9 @@ runs:
           "status": "completed",
           "conclusion": "success",
           "output": {
-            "title": "myplugin",
-            "summary": "hello this is my first custom plugin"
+            "title": "Coverage Report",
+            "summary": "Coverage report attached",
+            "text": $MARKDOWN
           }
         }
         EOF
