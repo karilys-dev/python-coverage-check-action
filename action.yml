@@ -22,56 +22,44 @@ runs:
         echo "$REPORT" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
 
-    - name: Publish styled coverage report
+    - name: Publish Coverage Report
       uses: actions/github-script@v7
       with:
         script: |
           const raw = `${{ steps.coverage.outputs.report }}`;
 
-          const lines = raw.split('\n').filter(l => l.trim() !== '');
-
-          // Remove separator lines (----)
-          const clean = lines.filter(l => !l.includes('---'));
-
-          // Extract header + rows
-          const header = clean[0].split(/\s{2,}/);
-          const rows = clean.slice(1).map(line => line.split(/\s{2,}/));
-
-          // Build markdown table
-          let table = '| ' + header.join(' | ') + ' |\n';
-          table += '| ' + header.map(() => '---').join(' | ') + ' |\n';
-
-          for (const row of rows) {
-            table += '| ' + row.join(' | ') + ' |\n';
+          const sha = context.payload.pull_request?.head?.sha;
+          if (!sha) {
+            core.setFailed("No PR context found");
+            return;
           }
 
-          // Extract TOTAL coverage
-          const totalLine = rows.find(r => r[0] === 'TOTAL');
-          const totalCoverage = totalLine ? totalLine[3] : 'N/A';
-
-          const sha = context.payload.pull_request?.head?.sha;
-
-          await github.rest.checks.create({
+          // STEP 1: Create check run (in_progress)
+          const create = await github.rest.checks.create({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            name: "Python coverage",
+            name: "Python Coverage",
             head_sha: sha,
+            status: "in_progress"
+          });
+
+          const check_run_id = create.data.id;
+
+          // STEP 2: Format output (simple for now)
+          const text = "```\n" + raw + "\n```";
+
+          // STEP 3: Update check run (completed)
+          await github.rest.checks.update({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            check_run_id,
             status: "completed",
             conclusion: "success",
             output: {
-              title: `Python Coverage (${totalCoverage})`,
-              summary: `
-          ### 📊 Coverage Summary
+              title: "Python Coverage",
+              summary: "Coverage report from pytest",
+              text: text
+            }
+          });
 
-          **Total Coverage: ${totalCoverage}**
-
-          <details>
-          <summary>View full report</summary>
-
-          ${table}
-
-          </details>
-          `,
-                    text: table
-                  }
-                });
+          console.log("Check run created + updated:", check_run_id);
