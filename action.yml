@@ -16,10 +16,9 @@ runs:
       shell: bash
       env:
         GITHUB_TOKEN: ${{ github.token }}
+      working-directory: ${{ inputs.working-directory }}
       run: |
         set -eEuo pipefail
-
-        REPORT_PATH="${{ inputs.working-directory }}"
 
         # Extract threshold from pyproject.toml
         THRESHOLD=$(grep -E 'addopts\s*=' pyproject.toml \
@@ -32,15 +31,8 @@ runs:
         fi
 
 
-        echo "Working directory: $REPORT_PATH"
         echo "Threshold: $THRESHOLD"
 
-        if [ ! -d "$REPORT_PATH" ]; then
-          echo "Report directory not found: $REPORT_PATH"
-          exit 1
-        fi
-
-        cd "$REPORT_PATH"
 
         # Get markdown coverage output
         REPORT_CONTENT=$(coverage report --format=markdown)
