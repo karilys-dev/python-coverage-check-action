@@ -14,8 +14,8 @@ runs:
       run: |
         REPORT_PATH="${{ inputs.working-directory }}"
 
-        if [ ! -f "$REPORT_PATH" ]; then
-          echo "Report not found: $REPORT_PATH"
+        if [ ! -d "$REPORT_PATH" ]; then
+          echo "Report directory not found: $REPORT_PATH"
           exit 1
         fi
         cd "${{ inputs.working-directory }}"
