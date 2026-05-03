@@ -16,7 +16,7 @@ runs:
       env:
         GITHUB_TOKEN: ${{ github.token }}
       run: |
-        set -e
+        set -eEuo pipefail
 
         REPORT_PATH="${{ inputs.working-directory }}"
 
@@ -31,7 +31,7 @@ runs:
         TEXT=$(jq -Rs . <<< "$MARKDOWN")
 
         THRESHOLD=${{ inputs.coverage-threshold }}
-
+        TOTAL_COVER=$(echo "$REPORT_CONTENT" | awk '/TOTAL/ {print $4}' | tr -d '%')
         echo "Total coverage: $TOTAL_COVER%"
         echo "Threshold: $THRESHOLD%"
 
