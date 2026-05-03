@@ -5,7 +5,9 @@ inputs:
   working-directory:
     required: false
     default: "."
-
+  coverage-threshold:
+    required: false
+    default: "80"
 runs:
   using: 'composite'
   steps:
@@ -28,6 +30,23 @@ runs:
         MARKDOWN=$(coverage report --format=markdown)
         TEXT=$(jq -Rs . <<< "$MARKDOWN")
 
+        THRESHOLD=${{ inputs.coverage-threshold }}
+
+        # Get total coverage (last line of report)
+        TOTAL_LINE=$(echo "$REPORT_CONTENT" | tail -n 1)
+        TOTAL_COVER=$(echo "$TOTAL_LINE" | awk '{print $4}' | sed 's/%//')
+
+        echo "Total coverage: $TOTAL_COVER%"
+        echo "Threshold: $THRESHOLD%"
+
+        if (( $(echo "$TOTAL_COVER < $THRESHOLD" | bc -l) )); then
+          CONCLUSION="failure"
+          SUMMARY="❌ Coverage $TOTAL_COVER% is below threshold $THRESHOLD%"
+        else
+          CONCLUSION="success"
+          SUMMARY="✅ Coverage $TOTAL_COVER% meets threshold $THRESHOLD%"
+        fi
+
         curl -X POST \
           -H "Authorization: Bearer $GITHUB_TOKEN" \
           -H "Accept: application/vnd.github+json" \
@@ -37,11 +56,12 @@ runs:
           "name": "Python Coverage Report",
           "head_sha": "${{ github.event.pull_request.head.sha }}",
           "status": "completed",
-          "conclusion": "success",
+          "conclusion": "${CONCLUSION}",
           "output": {
             "title": "Coverage Report",
-            "summary": "Coverage report attached",
+            "summary": "${SUMMARY}",
             "text": $TEXT
           }
         }
         EOF
+        
