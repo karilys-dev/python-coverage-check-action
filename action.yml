@@ -19,14 +19,20 @@ runs:
           exit 1
         fi
         cd "${{ inputs.working-directory }}"
-        REPORT_CONTENT=$(coverage report)
+        REPORT_CONTENT=$(coverage report --format=text)
 
-        MARKDOWN=$(printf "### Coverage Report\n\n\`\`\`\n%s\n\`\`\`" "$REPORT_CONTENT")
-        TEXT=$(jq -Rs . <<< "$REPORT_CONTENT")
+        TABLE="| File | Stmts | Miss | Cover |\n|------|-------|------|-------|\n"
+        echo "$REPORT_CONTENT" | tail -n +3 | while read -r line; do
+          FILE=$(echo "$line" | awk '{print $1}')
+          STMTS=$(echo "$line" | awk '{print $2}')
+          MISS=$(echo "$line" | awk '{print $3}')
+          COVER=$(echo "$line" | awk '{print $4}')
 
-        echo "github.sha: ${{ github.sha }}"
-        echo "pr.head.sha: ${{ github.event.pull_request.head.sha }}"
-        
+          TABLE="${TABLE}| $FILE | $STMTS | $MISS | $COVER |\n"
+        done
+        MARKDOWN=$(printf "### Coverage Report\n\n%s" "$TABLE")
+        TEXT=$(jq -Rs . <<< "$MARKDOWN")
+
         curl -X POST \
           -H "Authorization: Bearer $GITHUB_TOKEN" \
           -H "Accept: application/vnd.github+json" \
