@@ -32,14 +32,10 @@ runs:
 
         THRESHOLD=${{ inputs.coverage-threshold }}
 
-        # Get total coverage (last line of report)
-        TOTAL_LINE=$(echo "$REPORT_CONTENT" | tail -n 1)
-        TOTAL_COVER=$(echo "$TOTAL_LINE" | awk '{print $4}' | sed 's/%//')
-
         echo "Total coverage: $TOTAL_COVER%"
         echo "Threshold: $THRESHOLD%"
 
-        if (( $(echo "$TOTAL_COVER < $THRESHOLD" | bc -l) )); then
+        if [ "$TOTAL_COVER" -lt "$THRESHOLD" ]; then
           CONCLUSION="failure"
           SUMMARY="❌ Coverage $TOTAL_COVER% is below threshold $THRESHOLD%"
         else
