@@ -6,6 +6,8 @@ runs:
   steps:
     - name: Create check run
       shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
       run: |
         curl -X POST \
           -H "Authorization: Bearer $GITHUB_TOKEN" \
