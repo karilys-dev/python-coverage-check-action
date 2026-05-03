@@ -9,6 +9,8 @@ runs:
       env:
         GITHUB_TOKEN: ${{ github.token }}
       run: |
+        echo "github.sha: ${{ github.sha }}"
+        echo "pr.head.sha: ${{ github.event.pull_request.head.sha }}"
         curl -X POST \
           -H "Authorization: Bearer $GITHUB_TOKEN" \
           -H "Accept: application/vnd.github+json" \
@@ -16,7 +18,7 @@ runs:
           -d @- <<EOF
         {
           "name": "myplugin",
-          "head_sha": "${{ github.sha }}",
+          "head_sha": "${{ github.event.pull_request.head.sha }}",
           "status": "completed",
           "conclusion": "success",
           "output": {
