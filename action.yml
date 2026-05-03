@@ -22,6 +22,7 @@ runs:
         REPORT_CONTENT=$(coverage report)
 
         MARKDOWN=$(printf "### Coverage Report\n\n\`\`\`\n%s\n\`\`\`" "$REPORT_CONTENT")
+        TEXT=$(jq -Rs . <<< "$REPORT_CONTENT")
 
         echo "github.sha: ${{ github.sha }}"
         echo "pr.head.sha: ${{ github.event.pull_request.head.sha }}"
@@ -39,7 +40,7 @@ runs:
           "output": {
             "title": "Coverage Report",
             "summary": "Coverage report attached",
-            "text": $MARKDOWN
+            "text": $TEXT
           }
         }
         EOF
