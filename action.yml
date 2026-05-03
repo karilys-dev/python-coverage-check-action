@@ -41,7 +41,8 @@ runs:
 
         # Extract TOTAL coverage from markdown table
         TOTAL_COVER=$(echo "$REPORT_CONTENT" \
-          | grep -E '\|\s*TOTAL\s*\|' \
+          | grep -E '\|\s*\*\*TOTAL\*\*\s*\|' \
+          | sed 's/\*\*//g' \
           | awk -F'|' '{gsub(/ /,"",$5); print $5}' \
           | tr -d '%')
 
