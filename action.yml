@@ -20,7 +20,17 @@ runs:
         set -eEuo pipefail
 
         REPORT_PATH="${{ inputs.working-directory }}"
-        THRESHOLD="${{ inputs.coverage-threshold }}"
+
+        # Extract threshold from pyproject.toml
+        THRESHOLD=$(grep -E 'addopts\s*=' pyproject.toml \
+          | sed -E 's/.*--cov-fail-under=([0-9]+).*/\1/')
+
+        # Fallback if not found
+        if [ -z "$THRESHOLD" ]; then
+          THRESHOLD="${{ inputs.coverage-threshold }}"
+          echo "No --cov-fail-under found in pyproject.toml, defaulting to $THRESHOLD"
+        fi
+
 
         echo "Working directory: $REPORT_PATH"
         echo "Threshold: $THRESHOLD"
