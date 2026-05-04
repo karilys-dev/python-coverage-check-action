@@ -79,14 +79,14 @@ runs:
           exit 1
         fi
         SUMMARY_MD="![Coverage](${BADGE_URL})  **${TOTAL_COVER}%** (threshold: ${THRESHOLD}%)"
-        SUMMARY=$(jq -Rs . <<< "$SUMMARY_MD")
         if [ "$TOTAL_COVER" -lt "$THRESHOLD" ]; then
           CONCLUSION="failure"
-          SUMMARY+=" Coverage $TOTAL_COVER% is below threshold $THRESHOLD%"
+          SUMMARY+=" Coverage ${TOTAL_COVER}% is below threshold ${THRESHOLD}%"
         else
           CONCLUSION="success"
-          SUMMARY+=" Coverage $TOTAL_COVER% meets threshold $THRESHOLD%"
+          SUMMARY+=" Coverage ${TOTAL_COVER}% meets threshold ${THRESHOLD}%"
         fi
+
         SUMMARY=$(jq -Rs . <<< "$SUMMARY")
         TEXT=$(jq -Rs . <<< "$REPORT_CONTENT")
         # Create check run
