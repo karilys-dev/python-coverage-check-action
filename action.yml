@@ -78,19 +78,16 @@ runs:
           echo "THRESHOLD=$THRESHOLD"
           exit 1
         fi
-        SUMMARY_MD="![Coverage](${BADGE_URL})  **${TOTAL_COVER}%** (threshold: ${THRESHOLD}%)"$'\n\n'
-        SUMMARY=$(jq -Rs . <<< "$SUMMARY_MD")
 
         if [ "$TOTAL_COVER" -lt "$THRESHOLD" ]; then
           CONCLUSION="failure"
-          # SUMMARY+="❌ Coverage below required threshold"
+          SUMMARY="❌ Coverage $TOTAL_COVER% is below threshold $THRESHOLD%"
         else
           CONCLUSION="success"
-          # SUMMARY+="✅ Coverage meets requirement"
+          SUMMARY="✅ Coverage $TOTAL_COVER% meets threshold $THRESHOLD%"
         fi
-
-        SUMMARY=$(jq -Rs . <<< "$SUMMARY")
-        TEXT=$(jq -Rs . <<< "$REPORT_CONTENT")
+        MARKDOWN="![Coverage](${BADGE_URL})"$'\n\n'"$REPORT_CONTENT"
+        TEXT=$(jq -Rs . <<< "$MARKDOWN")
         # Create check run
         curl -s -X POST \
           -H "Authorization: Bearer $GITHUB_TOKEN" \
