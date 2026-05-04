@@ -101,7 +101,7 @@ runs:
           "conclusion": "${CONCLUSION}",
           "output": {
             "title": "Coverage Report",
-            "summary": "${TEXT}",
+            "summary": "${SUMMARY}",
             "text": $TEXT
           }
         }
