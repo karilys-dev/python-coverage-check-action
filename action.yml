@@ -78,13 +78,15 @@ runs:
           echo "THRESHOLD=$THRESHOLD"
           exit 1
         fi
-        SUMMARY_MD="![Coverage](${BADGE_URL})  **${TOTAL_COVER}%** (threshold: ${THRESHOLD}%)"
+        SUMMARY_MD="![Coverage](${BADGE_URL})  **${TOTAL_COVER}%** (threshold: ${THRESHOLD}%)"$'\n\n'
+        SUMMARY=$(jq -Rs . <<< "$SUMMARY_MD")
+
         if [ "$TOTAL_COVER" -lt "$THRESHOLD" ]; then
           CONCLUSION="failure"
-          SUMMARY+=" Coverage ${TOTAL_COVER}% is below threshold ${THRESHOLD}%"
+          # SUMMARY+="❌ Coverage below required threshold"
         else
           CONCLUSION="success"
-          SUMMARY+=" Coverage ${TOTAL_COVER}% meets threshold ${THRESHOLD}%"
+          # SUMMARY+="✅ Coverage meets requirement"
         fi
 
         SUMMARY=$(jq -Rs . <<< "$SUMMARY")
