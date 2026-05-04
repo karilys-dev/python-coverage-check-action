@@ -87,6 +87,7 @@ runs:
           CONCLUSION="success"
           SUMMARY+=" Coverage $TOTAL_COVER% meets threshold $THRESHOLD%"
         fi
+        SUMMARY=$(jq -Rs . <<< "$SUMMARY")
         TEXT=$(jq -Rs . <<< "$REPORT_CONTENT")
         # Create check run
         curl -s -X POST \
