@@ -38,7 +38,7 @@ runs:
 
         # Get markdown coverage output
         REPORT_CONTENT=$(coverage report --format=markdown)
-        TEXT=$(jq -Rs . <<< "$REPORT_CONTENT")
+        
         echo "==== RAW COVERAGE OUTPUT ===="
         echo "$REPORT_CONTENT"
         echo "============================="
@@ -49,6 +49,19 @@ runs:
           | sed 's/\*\*//g' \
           | awk -F'|' '{gsub(/ /,"",$5); print $5}' \
           | tr -d '%')
+        
+        # Add badge
+        BADGE_COLOR="red"
+
+        if [ "$TOTAL_COVER" -ge 90 ]; then
+          BADGE_COLOR="brightgreen"
+        elif [ "$TOTAL_COVER" -ge 75 ]; then
+          BADGE_COLOR="yellow"
+        elif [ "$TOTAL_COVER" -ge 50 ]; then
+          BADGE_COLOR="orange"
+        fi
+
+        BADGE_URL="https://img.shields.io/badge/coverage-${TOTAL_COVER}%25-${BADGE_COLOR}"
 
         # Fail fast if parsing broke
         if [ -z "$TOTAL_COVER" ]; then
@@ -73,7 +86,8 @@ runs:
           CONCLUSION="success"
           SUMMARY="✅ Coverage $TOTAL_COVER% meets threshold $THRESHOLD%"
         fi
-
+        MARKDOWN="![Coverage](${BADGE_URL})"$'\n\n'"$REPORT_CONTENT"
+        TEXT=$(jq -Rs . <<< "$MARKDOWN")
         # Create check run
         curl -s -X POST \
           -H "Authorization: Bearer $GITHUB_TOKEN" \
